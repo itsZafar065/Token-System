@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Inter:wght@400;600;900&display=swap');
+
+@import "tailwindcss";
+
+
+
+:root {
+
+  --primary-emerald: #10b981;
+
+}
+
+
+
+body {
+
+  margin: 0;
+
+  font-family: 'Inter', sans-serif;
+
+  background-color: #f8fafc;
+
+  /* Mobile zooming prevent karne ke liye */
+
+  touch-action: manipulation;
+
+}
+
+
+
+/* --- MOBILE SPECIFIC FIXES --- */
+
+@media (max-width: 640px) {
+
+  /* Text sizes ko chota karein */
+
+  .text-3xl { font-size: 1.5rem !important; }
+
+  .text-4xl { font-size: 1.75rem !important; }
+
+  .text-5xl { font-size: 2rem !important; }
+
+  .text-\[7rem\] { font-size: 4rem !important; } /* Token number mobile pe 4rem */
+
+  .text-\[22rem\] { font-size: 8rem !important; } /* TV View mobile pe chota */
+
+ 
+
+  /* Padding aur Margin ko kam karein */
+
+  .p-10 { padding: 1.5rem !important; }
+
+  .p-8 { padding: 1.25rem !important; }
+
+  .rounded-\[3rem\] { border-radius: 1.5rem !important; }
+
+  .rounded-\[2\.5rem\] { border-radius: 1.5rem !important; }
+
+ 
+
+  /* Inputs size fix */
+
+  input, textarea {
+
+    padding: 0.75rem !important;
+
+    font-size: 1rem !important;
+
+  }
+
+}
+
+
+
+/* Urdu adjustment */
+
+[dir="rtl"], .font-urdu {
+
+  font-family: 'Noto Nastaliq Urdu', serif !important;
+
+  line-height: 2 !important;
+
+}@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 25s linear infinite;
+}
