@@ -8,13 +8,25 @@ import * as XLSX from 'xlsx';
 import './i18n';
 import PublicDashboard from './components/PublicDashboard';
 
-const SOCKET_URL = window.location.hostname === 'localhost'
-  ? "http://localhost:5000"
-  : window.location.origin;
+// ========== API BASE URL CONFIGURATION ==========
+// Use Vite's environment variables or fallback to localhost
+const getBackendURL = () => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5000';
+  }
+  // Use environment variable from .env.production if available
+  return import.meta.env.VITE_BACKEND_URL || window.location.origin;
+};
+
+const SOCKET_URL = getBackendURL();
 
 const socket = io(SOCKET_URL, {
   autoConnect: false,
-  transports: ['websocket']
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  reconnectionAttempts: 5
 });
 
 const formatTime12 = (timeStr) => {

@@ -10,31 +10,30 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
-// Models (Make sure these paths are correct)
-const Token = require('./models/Token');
-const Schedule = require('./models/Schedule');
+// Models
+const Token = require('../models/Token');
+const Schedule = require('../models/Schedule');
 
-// ========== CORS CONFIGURATION ==========
+// ========== CORS CONFIGURATION FOR VERCEL ==========
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-  'http://localhost:5174',
-  process.env.FRONTEND_URL || '*'
+  process.env.FRONTEND_URL || 'https://your-frontend.vercel.app'
 ];
 
 const io = new Server(server, {
-    cors: { 
-        origin: allowedOrigins, 
-        methods: ["GET", "POST", "PATCH", "DELETE"],
-        credentials: true
-    }
+  cors: { 
+    origin: allowedOrigins, 
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    credentials: true
+  }
 });
 
 app.use(cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -60,47 +59,30 @@ const protect = (req, res, next) => {
 let activeUsers = [];
 
 io.on('connection', (socket) => {
-    // Add user to tracking list
     activeUsers.push({ id: socket.id, device: socket.handshake.headers['user-agent'] });
     io.emit('active-users-update', activeUsers);
 
     console.log('✅ Connection Established:', socket.id);
 
-    // Call Token for Public Dashboard
-    socket.on('call-token-ui', (data) => {
-        io.emit('token-called', data); // Frontend 'token-called' listen kar raha hai
-    });
-
-    socket.on('admin-updated-schedule', (newSchedule) => {
-        socket.broadcast.emit('schedule-updated', newSchedule);
-    });
-
     socket.on('disconnect', () => {
-        activeUsers = activeUsers.filter(u => u.id !== socket.id);
+        activeUsers = activeUsers.filter((user) => user.id !== socket.id);
         io.emit('active-users-update', activeUsers);
-        console.log('❌ User disconnected');
+        console.log('🔌 Disconnected:', socket.id);
+    });
+
+    socket.on('update-token', (data) => {
+        io.emit('token-updated', data);
     });
 });
 
-// --- ADMIN LOGIN ROUTE ---
-app.post('/api/admin/login', (req, res) => {
-    const { username, password } = req.body;
-
-    const isValidAdmin = (username === process.env.ADMIN_USER && password === process.env.ADMIN_PASS);
-    const isValidSuper = (username === process.env.SUPER_ADMIN_USER && password === process.env.SUPER_ADMIN_PASS);
-
-    if (isValidAdmin || isValidSuper) {
-        const role = isValidSuper ? 'superadmin' : 'admin';
-        const token = jwt.sign({ username, role }, JWT_SECRET, { expiresIn: '24h' });
-        return res.json({ success: true, token, role });
-    }
-
-    res.status(401).json({ success: false, message: "Ghalat credentials!" });
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, message: 'Backend is running!' });
 });
 
 // --- ROUTES ---
-const tokenRoutes = require('./routes/tokenRoutes');
-app.use('/api/tokens', tokenRoutes); // Is file ke andar status update aur delete ke routes hone chahiyen
+const tokenRoutes = require('../routes/tokenRoutes');
+app.use('/api/tokens', tokenRoutes);
 
 // --- SCHEDULE MANAGEMENT ---
 app.post('/api/schedule/update', protect, async (req, res) => {
@@ -123,19 +105,13 @@ app.get('/api/schedule', async (req, res) => {
     }
 });
 
-// Deployment logic
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../frontend/dist')));
-    app.get(/path*/, (req, res) => {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    });
-}
-
-mongoose.connect(process.env.MONGO_URI)
+// --- DATABASE CONNECTION ---
+if (process.env.MONGO_URI) {
+  mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB Connected Successfully!"))
     .catch((err) => console.log("❌ DB Error: ", err));
+}
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-    console.log(`🚀 Server is active on port ${PORT}`);
-});
+// ========== VERCEL SERVERLESS EXPORT ==========
+// For Vercel Serverless Functions
+module.exports = app;
